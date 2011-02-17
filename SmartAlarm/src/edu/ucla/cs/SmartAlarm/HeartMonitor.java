@@ -88,7 +88,7 @@ public class HeartMonitor extends Activity {
     private long clk = 0;
     private final int CONVFCTR = 100;
     
-    private boolean pa = false;
+    private boolean pa = false;	//pause
     
     //Variables for making threshold
     //ArrayList<Integer> prvEcgData; //Previous buffer
@@ -99,6 +99,12 @@ public class HeartMonitor extends Activity {
     private double curMax = -9999;
     private double curMin = 9999;
     private double total = 0;
+    
+    //variables for calculating heartrate
+    private double rate;
+	private int curPeak;
+	private double curCount;
+    private double prevCount;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -254,16 +260,16 @@ public class HeartMonitor extends Activity {
                 		thresh = RMS + (curMax-curMin)/2;
                 	setup--;
                 }else if(!pa){
-                  /*	mGraph.setTH(RMS);
                 	clk = (SystemClock.elapsedRealtime() - timeZero)/CONVFCTR;
-                	mGraph.setData(ecgData);
-                	mGraph.setBatt(pktH.getBatt());
-                	mGraph.setTime(clk/10);
-                	mGraph.setTH(thresh);
-                	setContentView(mGraph);*/
-                	Toast.makeText(getApplicationContext(), "" + RMS + ecgData.get(0) + clk/10 +thresh, Toast.LENGTH_SHORT);
 
-                	clk = (SystemClock.elapsedRealtime() - timeZero)/CONVFCTR;
+                	String printTxt = "Threshold: " + thresh + " clock: " + clk/10;
+                	for (int i = 0; i < ecgData.size(); i++)
+                		printTxt += ecgData.get(i) + "\n";
+                	
+                    TextView tv = new TextView(getApplicationContext());
+                	tv.setText(printTxt);
+                	setContentView(tv);
+       
                 	for(int i = 0; i < ecgData.size(); i++){
                 		if(ecgData.get(i) > curMax){
                 			curMax = ecgData.get(i);
@@ -272,26 +278,14 @@ public class HeartMonitor extends Activity {
                 			curMin = ecgData.get(i);
                 		}
                 		total += (ecgData.get(i)*ecgData.get(i));
+                		
                 	}
             		total /= ecgData.size();
             		RMS = Math.sqrt(total);
             		thresh = (thresh*0.75 + ((RMS + (curMax-curMin)/ecgData.size()))*0.25)+20;
+            		
+            		int rate = calcHR(ecgData);
                 }
-
-                
-            /*    int aStart = (HEAD + myECG.getlenH() + myECG.getlen())*2;
-                String dataStrAcc = readMessage.substring(aStart); // This is where ACC starts
-                       
-                Acc myACC = new Acc(dataStrAcc);               
-                Toast.makeText(getApplicationContext(), "ACC Header: "+ myACC.getID() + "; " + myACC.getlen() + "; " + myACC.getFormat(), Toast.LENGTH_SHORT).show();
-                ArrayList<Integer> accX = myACC.getX();
-                ArrayList<Integer> accY = myACC.getY();
-                ArrayList<Integer> accZ = myACC.getZ();
-                
-                for (int i = 0; i<accX.size(); i++){
-                    Toast.makeText(getApplicationContext(), "X: " + accX.get(i) + "; Y: " + accY.get(i) + "; Z: " + accZ.get(i), Toast.LENGTH_SHORT).show();
-    //            	mConversationArrayAdapter.add("X: " + accX.get(i) + "; Y: " + accY.get(i) + "; Z: " + accZ.get(i));           
-                }*/
                 
             
                 break;
@@ -309,6 +303,20 @@ public class HeartMonitor extends Activity {
         }
     };
 
+    /*calculate the heart rate */
+    public int calcHR(ArrayList<Integer> heartDat){
+    	int rate = 0;
+    	for (int i = 0; i < heartDat.size(); i++){
+    		if(heartDat.get(i) > curPeak && heartDat.get(i) > thresh){
+    			curPeak = heartDat.get(i);
+    			curCount = 0;
+    		}
+			curCount++;
+			prevCount++;
+    	}
+    	
+    	return rate;
+    }
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(D) Log.d(TAG, "onActivityResult " + resultCode);
         switch (requestCode) {
