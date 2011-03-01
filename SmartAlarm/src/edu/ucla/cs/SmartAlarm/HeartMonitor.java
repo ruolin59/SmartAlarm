@@ -109,7 +109,6 @@ public class HeartMonitor extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if(D) Log.e(TAG, "+++ ON CREATE +++");
 
         // Set up the window layout
         requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
@@ -175,18 +174,6 @@ public class HeartMonitor extends Activity {
 
         // Initialize the HeartMonitorService to perform bluetooth connections
         mChatService = new HeartMonitorService(this, mHandler);
-    }
-
-    @Override
-    public synchronized void onPause() {
-        super.onPause();
-        if(D) Log.e(TAG, "- ON PAUSE -");
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if(D) Log.e(TAG, "-- ON STOP --");
     }
 
     @Override
