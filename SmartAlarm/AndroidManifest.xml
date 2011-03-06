@@ -17,12 +17,8 @@
 
 		<service android:name=".SAService"></service>
 
-		<activity android:name=".HeartMonitor" android:label="@string/app_name"
+		<activity android:name=".HeartMonitor" android:label="HeartMonitor"
 			android:configChanges="orientation|keyboardHidden">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
 		</activity>
 		<activity android:name=".DeviceListActivity" android:label="@string/select_device"
 			android:theme="@android:style/Theme.Dialog" android:configChanges="orientation|keyboardHidden">
@@ -30,6 +26,8 @@
 		<activity android:name=".SettingsActivity" android:label="Settings">
 		</activity>
 		<activity android:name=".AlarmActivity" android:label="Alarm">
+		</activity>
+		<activity android:name=".AlarmController" android:label="AlarmControl">
 		</activity>
 	</application>
 </manifest>

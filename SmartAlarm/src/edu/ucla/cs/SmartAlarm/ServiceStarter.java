@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TabHost;
+import android.widget.Toast;
 
 public class ServiceStarter extends TabActivity{
 	Button buttonStart, buttonStop;
@@ -76,6 +77,9 @@ public class ServiceStarter extends TabActivity{
             Intent serverIntent = new Intent(this, DeviceListActivity.class);
             startActivityForResult(serverIntent, 1);
             return true;
+        case R.id.pause:
+        	Toast.makeText(getApplicationContext(), "Hour: " + AlarmActivity.mHour, Toast.LENGTH_SHORT).show();
+        	return true;
         }
         return false;
     }
