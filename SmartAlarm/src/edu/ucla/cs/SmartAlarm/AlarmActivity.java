@@ -37,6 +37,7 @@ public class AlarmActivity extends Activity{
             public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
                 mHour = hourOfDay;
                 mMinute = minute;
+                mPickTime.setText("Alarm: " + mHour + " hr " + mMinute + " min");
             }
         };
 	
@@ -55,6 +56,7 @@ public class AlarmActivity extends Activity{
         });
         
         mPickTime = (Button) findViewById(R.id.pickTime);
+        mPickTime.setText("Alarm: " + mHour + " hr " + mMinute + " min");
         
         mPickTime.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
