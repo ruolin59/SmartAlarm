@@ -1,7 +1,14 @@
 package edu.ucla.cs.SmartAlarm;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 
+import android.R.bool;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -11,6 +18,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class SAService extends Service {
@@ -28,6 +36,12 @@ public class SAService extends Service {
 	public static final int MESSAGE_DEVICE_NAME = 4;
 	public static final int MESSAGE_TOAST = 5;
 	
+	// variable for alarm
+    public static int hour = 8;
+    public static int minute = 0;
+    public static int thHour;
+    public static int thMinute;
+	
 	// Variables for making threshold
 	private int setup = 5;
 	private double thresh;
@@ -40,7 +54,11 @@ public class SAService extends Service {
 	private int curPeak;
 	private double curCount;
 	private double prevCount;
-	private double rate;
+//	private ArrayList <Double> rate;
+	private double avgRate = 0;
+	private int numRates = 0;
+	private double hrTot = 0;
+	private boolean above = false;
 
 	// Name of the connected device
 	private String mConnectedDeviceName = null;
@@ -48,6 +66,9 @@ public class SAService extends Service {
 	// Key names received from the BluetoothChatService Handler
 	public static final String DEVICE_NAME = "device_name";
 	public static final String TOAST = "toast";
+	
+	public OutputStream f;
+	public OutputStream t;
 
 	@Override
 	public void onCreate() {
@@ -59,6 +80,18 @@ public class SAService extends Service {
 
 		// Get local Bluetooth adapter
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		
+		File file = new File(getExternalFilesDir(null), "heartDat.txt");
+		File tFile = new File (getExternalFilesDir(null), "time.txt");
+		
+		
+		try {
+			f = new FileOutputStream(file);
+			t = new FileOutputStream(tFile);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return;
+		}
 
 		Toast.makeText(this,
 				"Bluetooth initialized" + mBluetoothAdapter.getName(),
@@ -95,7 +128,13 @@ public class SAService extends Service {
 	public void onDestroy() {
 		Context context = getApplicationContext();
 		Toast.makeText(context, "SAService Stopped", Toast.LENGTH_SHORT).show();
-
+		try {
+			f.close();
+			t.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// Stop chat service
 		if (mChatService != null) {
 			mChatService.stop();
@@ -125,25 +164,30 @@ public class SAService extends Service {
 		return result;
 	}
 
-	/* calculate the heart rate */
+	/* calculate the instantaneous heart rate */
 	public double calcHR(ArrayList<Integer> heartDat) {
-		curPeak = -9999;
-		curCount = 0;
+		double hRate = 0; 
+		if(!above){
+			curPeak = -9999;
+			curCount = 0;
+		}
 		for (int i = 0; i < heartDat.size(); i++) {
 			if (heartDat.get(i) > curPeak && heartDat.get(i) > thresh) {
+				above = true;
 				curPeak = heartDat.get(i);
 				curCount = 0;
-			}
+			}else if(heartDat.get(i) < thresh)
+				above = false;
 			curCount++;
 			prevCount++;
 		}
-		if(prevCount > 0 && curPeak > 0){
+		if(prevCount > 0 && curPeak > 0 && above == false){
 			prevCount -= curCount;
-			rate = prevCount/300;
-			rate = 60/rate;
+			hRate = prevCount/300;
+			hRate = 60/hRate;
 			prevCount = curCount;
 		}
-		return rate;
+		return hRate;
 	}
 
 	@Override
@@ -165,6 +209,9 @@ public class SAService extends Service {
 		// stopped, so return sticky.
 		return START_STICKY;
 	}
+	
+	private void alarm()
+	{}
 
 	// The Handler that gets information back from the HeartMonitorService
 	private final Handler mHandler = new Handler() {
@@ -214,17 +261,65 @@ public class SAService extends Service {
 				
 				if (setup > 0) {
 					if (setup != 5)
-						thresh = (thresh * 0.5) + (((RMS + (curMax - curMin)/ 2)) * 0.5);
+						thresh = (thresh * 0.5) + (((RMS + (curMax - RMS)/ 2)) * 0.5);
 					else
-						thresh = RMS + (curMax - curMin) / 2;
+						thresh = RMS + (curMax - RMS) / 2;
 					setup--;
 				} 
 				else {
-					thresh = (thresh * 0.5) + (((RMS + (curMax - curMin)/ 2)) * 0.5);
+					thresh = (thresh * 0.5) + (((RMS + (curMax - RMS)/ 2)) * 0.5);
+					double instRate = calcHR(ecgData);
+					if (30 < instRate && instRate < 150){	//filter out improbable heart rates
+						numRates++;
+						hrTot += instRate; 
+					}
 					
-					Toast.makeText(getApplicationContext(), "Heart Rate: " + calcHR(ecgData), Toast.LENGTH_SHORT).show();
+					final Calendar ca = Calendar.getInstance();
+					int curHr = ca.get(Calendar.HOUR_OF_DAY);
+					int curMin = ca.get(Calendar.MINUTE);
+					if (numRates == 60){	//average the HR around every 5-7 minutes
+						double avg = hrTot / 60;
+						if (avg < avgRate)
+							avgRate = avg;
+						
+						
+						else if (thHour <= curHr && curHr <= hour){ //we are in the wake-up frame
+							if (thHour == curHr && curMin > thMinute){
+								if (avg > avgRate +10)
+									alarm();
+							}
+							else if (avg > avgRate +10)
+								alarm();
+						}
+						
+						//wake the person up by time regardless of sleep cycle
+						if (curHr == hour && curMin == minute)
+							alarm();
+						
+						numRates = 0;
+						hrTot = 0;
+						Toast.makeText(getApplicationContext(), "Average Rate: " + avg,Toast.LENGTH_SHORT).show();
+					}
+					
+					
+				//	Toast.makeText(getApplicationContext(), "Heart Rate: " + calcHR(ecgData) + " Thresh: " + thresh + " peak: " + curPeak, Toast.LENGTH_SHORT).show();
+					Double r = instRate;
+					try {
+						f.write(r.toString().getBytes());
+						String newline = "\n";
+						f.write(newline.getBytes());
+						
+						final Calendar c = Calendar.getInstance();
+						Integer h = c.get(Calendar.HOUR_OF_DAY);
+						Integer m = c.get(Calendar.MINUTE);
+						Integer s = c.get(Calendar.SECOND);
+						String theTime = h.toString()+ ":" + m.toString()+":"+ s.toString()+"\n";
+						t.write(theTime.getBytes());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
-
 				break;
 			case MESSAGE_DEVICE_NAME:
 				// save the connected device's name

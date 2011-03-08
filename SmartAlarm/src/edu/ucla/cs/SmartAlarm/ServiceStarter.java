@@ -3,6 +3,7 @@ package edu.ucla.cs.SmartAlarm;
 import android.app.Activity;
 import android.app.TabActivity;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -14,6 +15,7 @@ import android.widget.Toast;
 
 public class ServiceStarter extends TabActivity{
 	Button buttonStart, buttonStop;
+	private MediaPlayer mp;
     //@Override
 	//public void onCreate(Bundle savedInstanceState) {
     //  super.onCreate(savedInstanceState);
@@ -78,7 +80,9 @@ public class ServiceStarter extends TabActivity{
             startActivityForResult(serverIntent, 1);
             return true;
         case R.id.pause:
-        	Toast.makeText(getApplicationContext(), "Hour: " + AlarmActivity.mHour, Toast.LENGTH_SHORT).show();
+            mp = MediaPlayer.create(this, R.raw.mj);
+            mp.start();
+            Toast.makeText(getApplicationContext(), "Hour: " + AlarmActivity.mHour, Toast.LENGTH_SHORT).show();
         	return true;
         }
         return false;
