@@ -1,21 +1,20 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright (C) 2009 The Android Open Source Project
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package edu.ucla.cs.SmartAlarm;
-
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -26,25 +25,19 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.Window;
-import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
 
 /**
- * This is the main Activity that displays the current chat session.
- * This is the heart monitoring portion of the smart alarm
- */
+* This is the main Activity that displays the current chat session.
+* This is the heart monitoring portion of the smart alarm
+*/
 public class HeartMonitor extends Activity {
     // Debugging
     private static final String TAG = "HeartMonitor";
@@ -66,13 +59,8 @@ public class HeartMonitor extends Activity {
     private static final int REQUEST_ENABLE_BT = 2;
 
     
-    // Device Header length
-    private static final int HEAD = 6;
-    
     // Layout Views
     private TextView mTitle;
-    private ListView mConversationView;
-
     // Name of the connected device
     private String mConnectedDeviceName = null;
     // Array adapter for the conversation thread
@@ -88,22 +76,19 @@ public class HeartMonitor extends Activity {
     private long clk = 0;
     private final int CONVFCTR = 100;
     
-    private boolean pa = false;	//pause
+    private boolean pa = false; //pause
     
     //Variables for making threshold
     //ArrayList<Integer> prvEcgData; //Previous buffer
     private int setup = 5;
     private double thresh;
     private double RMS;
-    private double prevMax;
     private double curMax = -9999;
     private double curMin = 9999;
     private double total = 0;
     
-    //variables for calculating heartrate
-    private double rate;
-	private int curPeak;
-	private double curCount;
+    private int curPeak;
+private double curCount;
     private double prevCount;
     
     @Override
@@ -185,12 +170,12 @@ public class HeartMonitor extends Activity {
     }
     
     public static String getHexString(byte[] b, int length){
-    	  String result = "";
-    	  for (int i=0; i < length; i++) {
-    	    result +=
-    	          Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
-    	  }
-    	  return result;
+     String result = "";
+     for (int i=0; i < length; i++) {
+     result +=
+     Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
+     }
+     return result;
     }
 
     // The Handler that gets information back from the HeartMonitorService
@@ -221,57 +206,57 @@ public class HeartMonitor extends Activity {
                 // construct a string from the valid bytes in the buffer
                 String readMessage = getHexString(readBuf, msg.arg1);
                 
-                PacketHeader pktH = new PacketHeader(readMessage);
+                new PacketHeader(readMessage);
                 
-                String dataStr = readMessage.substring(12);	//this is where the ECG starts
+                String dataStr = readMessage.substring(12); //this is where the ECG starts
                
                 Ecg myECG = new Ecg(dataStr);
                 ArrayList<Integer> ecgData = myECG.getData();
 
-            	total = 0;
+             total = 0;
                 if(setup > 0){
-                	for(int i = 0; i < ecgData.size(); i++){
-                		if(ecgData.get(i) > curMax){
-                			curMax = ecgData.get(i);
-                		}
-                		if(ecgData.get(i) < curMin){
-                			curMin = ecgData.get(i);
-                		}
-                		total += (ecgData.get(i)*ecgData.get(i));
-                	}
-            		total /= ecgData.size();
-            		RMS = Math.sqrt(total);
-                	if(setup != 5)
-                		thresh = (thresh*0.75 + ((RMS + (curMax-curMin)/ecgData.size()))*0.25);
-                	else
-                		thresh = RMS + (curMax-curMin)/2;
-                	setup--;
+                 for(int i = 0; i < ecgData.size(); i++){
+                 if(ecgData.get(i) > curMax){
+                 curMax = ecgData.get(i);
+                 }
+                 if(ecgData.get(i) < curMin){
+                 curMin = ecgData.get(i);
+                 }
+                 total += (ecgData.get(i)*ecgData.get(i));
+                 }
+             total /= ecgData.size();
+             RMS = Math.sqrt(total);
+                 if(setup != 5)
+                 thresh = (thresh*0.75 + ((RMS + (curMax-curMin)/ecgData.size()))*0.25);
+                 else
+                 thresh = RMS + (curMax-curMin)/2;
+                 setup--;
                 }else if(!pa){
-                	clk = (SystemClock.elapsedRealtime() - timeZero)/CONVFCTR;
+                 clk = (SystemClock.elapsedRealtime() - timeZero)/CONVFCTR;
 
-                	String printTxt = "Threshold: " + thresh + " clock: " + clk/10;
-                	for (int i = 0; i < ecgData.size(); i++)
-                		printTxt += ecgData.get(i) + "\n";
-                	
+                 String printTxt = "Threshold: " + thresh + " clock: " + clk/10;
+                 for (int i = 0; i < ecgData.size(); i++)
+                 printTxt += ecgData.get(i) + "\n";
+                
                     TextView tv = new TextView(getApplicationContext());
-                	tv.setText(printTxt);
-                	setContentView(tv);
+                 tv.setText(printTxt);
+                 setContentView(tv);
        
-                	for(int i = 0; i < ecgData.size(); i++){
-                		if(ecgData.get(i) > curMax){
-                			curMax = ecgData.get(i);
-                		}
-                		if(ecgData.get(i) < curMin){
-                			curMin = ecgData.get(i);
-                		}
-                		total += (ecgData.get(i)*ecgData.get(i));
-                		
-                	}
-            		total /= ecgData.size();
-            		RMS = Math.sqrt(total);
-            		thresh = (thresh*0.75 + ((RMS + (curMax-curMin)/ecgData.size()))*0.25)+20;
-            		
-            		int rate = calcHR(ecgData);
+                 for(int i = 0; i < ecgData.size(); i++){
+                 if(ecgData.get(i) > curMax){
+                 curMax = ecgData.get(i);
+                 }
+                 if(ecgData.get(i) < curMin){
+                 curMin = ecgData.get(i);
+                 }
+                 total += (ecgData.get(i)*ecgData.get(i));
+                
+                 }
+             total /= ecgData.size();
+             RMS = Math.sqrt(total);
+             thresh = (thresh*0.75 + ((RMS + (curMax-curMin)/ecgData.size()))*0.25)+20;
+            
+             calcHR(ecgData);
                 }
                 
             
@@ -292,17 +277,17 @@ public class HeartMonitor extends Activity {
 
     /*calculate the heart rate */
     public int calcHR(ArrayList<Integer> heartDat){
-    	int rate = 0;
-    	for (int i = 0; i < heartDat.size(); i++){
-    		if(heartDat.get(i) > curPeak && heartDat.get(i) > thresh){
-    			curPeak = heartDat.get(i);
-    			curCount = 0;
-    		}
-			curCount++;
-			prevCount++;
-    	}
-    	
-    	return rate;
+     int rate = 0;
+     for (int i = 0; i < heartDat.size(); i++){
+     if(heartDat.get(i) > curPeak && heartDat.get(i) > thresh){
+     curPeak = heartDat.get(i);
+     curCount = 0;
+     }
+curCount++;
+prevCount++;
+     }
+    
+     return rate;
     }
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(D) Log.d(TAG, "onActivityResult " + resultCode);
@@ -349,11 +334,11 @@ public class HeartMonitor extends Activity {
             startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
             return true;
         case R.id.pause:
-        	if(pa)
-        		pa = false;
-        	else
-        		pa = true;
-        	return true;
+         if(pa)
+         pa = false;
+         else
+         pa = true;
+         return true;
         }
         return false;
     }

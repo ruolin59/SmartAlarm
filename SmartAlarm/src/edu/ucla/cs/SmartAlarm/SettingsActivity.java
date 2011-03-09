@@ -3,7 +3,6 @@ package edu.ucla.cs.SmartAlarm;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ListActivity;
-import android.bluetooth.BluetoothAdapter;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.widget.AdapterView;
@@ -15,9 +14,7 @@ import android.view.View;
 import android.widget.Toast;
 
 public class SettingsActivity extends ListActivity{
-	int range = 0;
 	static final int RANGE_DIALOG_ID = 0;
-	private BluetoothAdapter bta = null;
 	
 	protected Dialog onCreateDialog(int id) {
         switch (id) {
@@ -27,8 +24,8 @@ public class SettingsActivity extends ListActivity{
             builder.setTitle("Pick a range");
             builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int item) {
-                	range = (item+1)*30;
-                    //Toast.makeText(getApplicationContext(), items[item], Toast.LENGTH_SHORT).show();
+                	if (ServiceStarter.serviceOn)
+                		SAService.wakeupRange = (item+1)*30;
                 }
             });
             AlertDialog alert = builder.create();
@@ -41,8 +38,7 @@ public class SettingsActivity extends ListActivity{
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        final String[] listItems = {"Set Time Range", "Bluetooth", "Device Name"};
-        bta = BluetoothAdapter.getDefaultAdapter();
+        final String[] listItems = {"Set Time Range", "Alarm Simulation", "Heart Rate"};
         
         setListAdapter(new ArrayAdapter<String>(this, R.layout.setting, listItems));
     
@@ -56,15 +52,22 @@ public class SettingsActivity extends ListActivity{
         				showDialog(RANGE_DIALOG_ID);
         			else if (((TextView) view).getText().equals(listItems[1]))
         			{
-        				Toast.makeText(getApplicationContext(), "Bluetooth" + (bta.isEnabled()?" on":" off"), Toast.LENGTH_SHORT).show();
+        				if (ServiceStarter.serviceOn)
+        					SAService.simulate = true;
         			}
         			else if (((TextView) view).getText().equals(listItems[2]))
         			{
-        				Toast.makeText(getApplicationContext(), "Device Name", Toast.LENGTH_SHORT).show();
+        				String toastText = "Service is not on";
+        				if (ServiceStarter.serviceOn)
+        				{
+        					toastText = "Heart Rate: " + SAService.avgRate;
+        				}
+
+        				Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
         			}
         	}
         				
         });
-     
+      
 	}
 }
