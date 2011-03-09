@@ -38,7 +38,7 @@ public class SettingsActivity extends ListActivity{
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        final String[] listItems = {"Set Time Range", "Alarm Simulation", "Heart Rate"};
+        final String[] listItems = {"Set Time Range", "Sleep Simulation", "Heart Rate"};
         
         setListAdapter(new ArrayAdapter<String>(this, R.layout.setting, listItems));
     
@@ -53,7 +53,9 @@ public class SettingsActivity extends ListActivity{
         			else if (((TextView) view).getText().equals(listItems[1]))
         			{
         				if (ServiceStarter.serviceOn)
-        					SAService.simulate = true;
+        					SAService.simulate = !SAService.simulate;
+        				Toast.makeText(getApplicationContext(), "Sleep simulation: " + (SAService.simulate?"on":"off"), Toast.LENGTH_SHORT).show();
+            			       				
         			}
         			else if (((TextView) view).getText().equals(listItems[2]))
         			{

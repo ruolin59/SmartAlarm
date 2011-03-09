@@ -202,8 +202,6 @@ public class SAService extends Service {
 
 		// If this intent carries the address
 		if (address != null) {
-			Toast.makeText(this, "Got device address: " + address, Toast.LENGTH_SHORT).show();
-
 			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 			// Attempt to connect to the device
 			mChatService.connect(device);
@@ -275,16 +273,12 @@ public class SAService extends Service {
 				final Calendar ca = Calendar.getInstance();
 				
 				int curTime = ca.get(Calendar.HOUR_OF_DAY)*60 + ca.get(Calendar.MINUTE);
-				// refresh rates once in a while
-				if (ca.get(Calendar.SECOND) == 15)
+
+				if (withinRange(curTime) && avgRate>LIGHT_SLEEP_RATE && (!alarmSounded))
 				{
-					if (withinRange(curTime) && avgRate<LIGHT_SLEEP_RATE && (!alarmSounded))
-					{
-						alarm();
-					}
+					alarm();
 				}
 
-				
 				// refresh rates once in a while
 				if (ca.get(Calendar.SECOND) == 0)
 				{
