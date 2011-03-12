@@ -19,6 +19,7 @@ public class WakeupActivity extends Activity{
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
             	mp.stop();
+            	SAService.minAvg = 200;	//alarm went off, reset minimum average
             	finish();
             }
         });

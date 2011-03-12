@@ -28,14 +28,15 @@ public class SAService extends Service {
 	public static final int MESSAGE_TOAST = 5;
 	
 	// variable for alarm
-    public static int wakeupTime = 480;	// In minutes
-    public static int wakeupRange = 30;	// In minutes
+    public static int wakeupTime = 480;	// In minutes, this is default value, changed in AlarmActivity
+    public static int wakeupRange = 30;	// In minutes, this is default value, changed in SettingsActivity
 	public static boolean alarmSounded = true;
 	public static boolean simulate = false;
 	
 	// Calculated variables
 	private double thresh = 0;
-	static double avgRate = 75;
+	static double avgRate;
+	static double minAvg = 200;
 	
 	// Heart rate calculation variables
 	private double interval = 0;
@@ -49,6 +50,7 @@ public class SAService extends Service {
 	// variables for calculating heart rate
 	private int numRates = 0;
 	private double heartRateTotal = 0;
+	private final int MAXNUM = 300;
 
 
 	// Name of the connected device
@@ -214,11 +216,13 @@ public class SAService extends Service {
 	
 	public void alarm()
 	{
-		alarmSounded = true;
-		simulate = false;
-		Intent dialogIntent = new Intent(getBaseContext(), WakeupActivity.class);
-		dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		getApplication().startActivity(dialogIntent);
+		if (!alarmSounded){
+			alarmSounded = true;
+			simulate = false;
+			Intent dialogIntent = new Intent(getBaseContext(), WakeupActivity.class);
+			dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			getApplication().startActivity(dialogIntent);
+		}
 	}
 
 	// The Handler that gets information back from the HeartMonitorService
@@ -274,18 +278,31 @@ public class SAService extends Service {
 				
 				int curTime = ca.get(Calendar.HOUR_OF_DAY)*60 + ca.get(Calendar.MINUTE);
 
-				if (withinRange(curTime) && avgRate>LIGHT_SLEEP_RATE && (!alarmSounded))
-				{
-					alarm();
-				}
-
 				// refresh rates once in a while
-				if (ca.get(Calendar.SECOND) == 0)
+				if (numRates >= MAXNUM)
+				{
+					Toast.makeText(getApplicationContext(), "300 points", Toast.LENGTH_SHORT).show();
+					numRates = 0;
+					heartRateTotal = 0;
+					if (avgRate < minAvg)
+						minAvg = avgRate;
+					
+					//only check when to wake up in here, because this is the more accurate average rate
+					if (withinRange(curTime) && avgRate>LIGHT_SLEEP_RATE)
+					{
+						if (avgRate >= minAvg+10 || curTime == wakeupTime)
+							alarm();
+					}
+					
+				}
+				else if (curTime == wakeupTime)
+					alarm();
+				/*if (ca.get(Calendar.SECOND) == 0)
 				{
 					numRates = 0;
 					heartRateTotal = 0;
 					avgRate = 0;
-				}
+				}*/
 				break;
 			case MESSAGE_DEVICE_NAME:
 				// save the connected device's name

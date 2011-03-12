@@ -66,6 +66,7 @@ public class AlarmActivity extends Activity{
             	{
     		        stopService(new Intent(getApplicationContext(), SAService.class));
     		        ServiceStarter.serviceOn = false;
+    		        SAService.minAvg = 200;	//service stopped, min average also reset
             	}
             }
         });

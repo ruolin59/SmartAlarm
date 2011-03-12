@@ -62,7 +62,7 @@ public class SettingsActivity extends ListActivity{
         				String toastText = "Service is not on";
         				if (ServiceStarter.serviceOn)
         				{
-        					toastText = "Heart Rate: " + SAService.avgRate;
+        					toastText = "Heart Rate: " + SAService.avgRate + " min avg: " + SAService.minAvg;
         				}
 
         				Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
